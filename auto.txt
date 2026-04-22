@@ -1,6 +1,7 @@
 -- ==============================================
--- AUTO SPAM PARRY - VERSIÓN CON LÍMITE DE RED
--- Velocidad segura para no saturar tu internet
+-- AUTO SPAM PARRY PARA BLADE BALL
+-- Versión compatible con Delta, Codex, Krnl, etc.
+-- Basado en el método ParryAttempt que funciona
 -- ==============================================
 
 local Players = game:GetService("Players")
@@ -12,18 +13,25 @@ local player = Players.LocalPlayer
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local ParryAttempt = Remotes:WaitForChild("ParryAttempt")
 
--- Configuración SEGURA (no satura internet)
+-- ========== CONFIGURACIÓN DEL SPAM ==========
 local active = false
 local spamThread = nil
-local PARRY_PER_CYCLE = 3      -- Reducido de 8 a 3
-local CYCLE_DELAY = 0.008      -- Aumentado de 0.001 a 0.008
+local activationKey = Enum.KeyCode.F
+local customKeyName = "F"
 
--- Función de parry
+-- Parámetros de spam (ajustables)
+local PARRY_PER_CYCLE = 8   -- 8 parrys por ciclo (muy potente)
+local CYCLE_DELAY = 0.001   -- 0.001 segundos entre ciclos
+
+-- ========== FUNCIÓN PARRY ==========
 local function doParry()
     ParryAttempt:FireServer()
+    -- Simular tecla F como respaldo (opcional, comenta si quieres solo FireServer)
+    VIM:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+    VIM:SendKeyEvent(false, Enum.KeyCode.F, false, game)
 end
 
--- Spam con límite seguro
+-- ========== SPAM PRINCIPAL ==========
 local function startSpam()
     if spamThread then return end
     spamThread = task.spawn(function()
@@ -31,6 +39,9 @@ local function startSpam()
             for i = 1, PARRY_PER_CYCLE do
                 ParryAttempt:FireServer()
             end
+            -- Simular tecla una sola vez por ciclo
+            VIM:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+            VIM:SendKeyEvent(false, Enum.KeyCode.F, false, game)
             task.wait(CYCLE_DELAY)
         end
     end)
@@ -43,74 +54,115 @@ local function stopSpam()
     end
 end
 
+-- ========== TOGGLE ==========
 local function toggleSpam()
     active = not active
-    if active then startSpam() else stopSpam() end
+    if active then
+        startSpam()
+        print("⚡ Auto Spam Parry ACTIVADO")
+    else
+        stopSpam()
+        print("🔴 Auto Spam Parry DESACTIVADO")
+    end
 end
 
--- GUI
+-- ========== GUI SIMPLE ==========
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 ScreenGui.Name = "AutoSpam"
 ScreenGui.ResetOnSpawn = false
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 180, 0, 80)
-Frame.Position = UDim2.new(0.5, -90, 0.5, -40)
+Frame.Size = UDim2.new(0, 220, 0, 100)
+Frame.Position = UDim2.new(0.5, -110, 0.5, -50)
 Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 Frame.BackgroundTransparency = 0.1
 Frame.BorderSizePixel = 0
 Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 10)
 
 local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0, 25)
+Title.Size = UDim2.new(1, 0, 0, 30)
 Title.Text = "⚡ AUTO SPAM ⚡"
 Title.TextColor3 = Color3.new(1, 1, 1)
 Title.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 12
+Title.TextSize = 14
 Instance.new("UICorner", Title).CornerRadius = UDim.new(0, 10)
 
 local StatusLabel = Instance.new("TextLabel", Frame)
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 20)
-StatusLabel.Position = UDim2.new(0.05, 0, 0, 30)
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 25)
+StatusLabel.Position = UDim2.new(0.05, 0, 0, 38)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
 StatusLabel.Font = Enum.Font.GothamBold
-StatusLabel.TextSize = 11
-StatusLabel.Text = "INACTIVO"
+StatusLabel.TextSize = 13
+StatusLabel.Text = "🔴 INACTIVO"
+
+local KeyButton = Instance.new("TextButton", Frame)
+KeyButton.Size = UDim2.new(0.3, 0, 0, 30)
+KeyButton.Position = UDim2.new(0.6, 0, 0, 65)
+KeyButton.Text = customKeyName
+KeyButton.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+KeyButton.TextColor3 = Color3.new(1, 1, 1)
+KeyButton.Font = Enum.Font.GothamBold
+KeyButton.TextSize = 13
+Instance.new("UICorner", KeyButton).CornerRadius = UDim.new(0, 6)
 
 local ToggleBtn = Instance.new("TextButton", Frame)
-ToggleBtn.Size = UDim2.new(0.9, 0, 0, 25)
-ToggleBtn.Position = UDim2.new(0.05, 0, 0, 52)
-ToggleBtn.Text = "ACTIVAR"
+ToggleBtn.Size = UDim2.new(0.9, 0, 0, 30)
+ToggleBtn.Position = UDim2.new(0.05, 0, 0, 65)
+ToggleBtn.Text = "ACTIVAR (" .. customKeyName .. ")"
 ToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
 ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.TextSize = 11
+ToggleBtn.TextSize = 12
 Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 6)
 
+-- Eventos
 ToggleBtn.MouseButton1Click:Connect(function()
     toggleSpam()
     if active then
-        StatusLabel.Text = "ACTIVO"
+        StatusLabel.Text = "🟢 ACTIVO"
         StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        ToggleBtn.Text = "DESACTIVAR"
+        ToggleBtn.Text = "DESACTIVAR (" .. customKeyName .. ")"
         ToggleBtn.BackgroundColor3 = Color3.fromRGB(120, 20, 20)
     else
-        StatusLabel.Text = "INACTIVO"
+        StatusLabel.Text = "🔴 INACTIVO"
         StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
-        ToggleBtn.Text = "ACTIVAR"
+        ToggleBtn.Text = "ACTIVAR (" .. customKeyName .. ")"
         ToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     end
 end)
 
+-- Cambiar tecla
+local waitingForKey = false
+KeyButton.MouseButton1Click:Connect(function()
+    waitingForKey = true
+    KeyButton.Text = "???"
+    KeyButton.BackgroundColor3 = Color3.fromRGB(80, 80, 30)
+    local conn
+    conn = UserInputService.InputBegan:Connect(function(input)
+        if not waitingForKey then return end
+        if input.KeyCode ~= Enum.KeyCode.Unknown then
+            activationKey = input.KeyCode
+            customKeyName = input.KeyCode.Name
+            KeyButton.Text = customKeyName
+            ToggleBtn.Text = (active and "DESACTIVAR (" or "ACTIVAR (") .. customKeyName .. ")"
+            KeyButton.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            waitingForKey = false
+            conn:Disconnect()
+        end
+    end)
+end)
+
+-- Tecla rápida
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.F then
+    if waitingForKey or gameProcessed then return end
+    if input.KeyCode == activationKey then
         toggleSpam()
     end
 end)
 
+-- Mover ventana
 local dragging, dragStart, startPos
 Frame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -130,3 +182,8 @@ UserInputService.InputEnded:Connect(function(input)
         dragging = false
     end
 end)
+
+print("✅ Auto Spam Parry CARGADO (Versión Universal)")
+print("⚡ Potencia: " .. PARRY_PER_CYCLE .. " parrys/ciclo | Delay " .. (CYCLE_DELAY * 1000) .. "ms")
+print("🎮 Tecla actual: " .. customKeyName .. " | Clic en el botón para cambiarla")
+print("🔥 Presiona F o la tecla que configures para activar")
